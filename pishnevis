@@ -1,0 +1,237 @@
+import copy
+import logging
+
+logging.basicConfig(format="%(message)s", level=logging.INFO, filename="log.txt", filemode="w")
+# Enter course names
+def get_course_names():
+    do_once = False
+    C = []
+    while True:
+        temp = input("Please enter a course name (-1 to end):")
+        if temp == "-1":
+            if do_once:
+                break
+            else:
+                print("You must enter at least one course.")
+                continue
+        C.append(temp.lower())
+        do_once = True
+    return C
+
+# Enter capacity of each course
+def get_caps(C):
+    i = 0
+    q_c = []
+    while i < len(C):
+        try:
+            temp = int(input(f"Please enter the capacity of the {C[i]} course: "))
+        except ValueError:
+            print("You must enter a number, not string.")
+        else:
+            if temp < 1:
+                if i > 1:
+                    i -= 1
+                print("Sorry. You must enter a valid number.")
+                continue
+            q_c.append(temp)
+            i += 1
+    return q_c
+
+# Enter number of students
+def get_students():
+    N = 0
+    while True:
+        try:
+            N = int(input("Please enter number of students: "))
+        except ValueError:
+            print("You must enter a number, not string.")
+        else:
+            if N < 1:
+                print("Sorry. You must enter a valid number.")
+                continue
+            break
+    return N
+
+
+def get_preferences(N, C):
+    i = 0
+    preferences = []
+    while i < N:
+        print(f"Student {i + 1}, Enter lessons by priority:")
+        j = 0
+        temp = []
+        while j < len(C):
+            c = input(f"{j + 1}: ").lower()
+            if c in C:
+                temp.append(c)
+                j += 1
+            else:
+                print(f"{c} you entered is not in the class list.")
+                if j > 1:
+                    j -= 1
+                continue
+        preferences.append(temp)
+        i += 1
+    return preferences
+
+
+# Enter admission of each student
+# def set_admission():
+#     while True:
+#         try:
+#             adm = int(input("Enter the admission capacity of each student: "))
+#         except ValueError:
+#             print("Please enter a number. not string.")
+#         else:
+#             if adm > 0:
+#                 return adm
+#             else:
+#                 print("Please enter an positive number")
+
+# def set_B_list(N, q_s):
+#     count = q_s * N
+#     numbers = list(range(1, count+1))
+#     numbers.sort()
+#     B = [[] for i in range(N)]
+#     if q_s % 2 == 0:
+#         while numbers:
+#             for j in range(N):
+#                 maximum = max(numbers)
+#                 minimum = min(numbers)
+#                 B[j].append(minimum)
+#                 B[j].append(maximum)
+#                 numbers.remove(minimum)
+#                 numbers.remove(maximum)
+#     else:
+#         while len(numbers) > q_s:
+#             for j in range(N):
+#                 maximum = max(numbers)
+#                 minimum = min(numbers)
+#                 B[j].append(minimum)
+#                 B[j].append(maximum)
+#                 numbers.remove(minimum)
+#                 numbers.remove(maximum)
+#         i = 0
+#         # numbers.reverse()
+#         for item in B:
+#             item.append(numbers[i])
+#             i += 1
+#     return B
+
+def set_B_list(N):
+    B = list()
+    i = 1
+    j = N * 2
+    while j - i != -1:
+        B.append([i, j])
+        i += 1
+        j -= 1
+    return B
+
+def main_algorithm(C, q_c, N, p, B):
+    print(q_c)
+    active = True
+    A = [[] for c in C]
+    b_prime = [[] for i in range(N)]
+    while active:
+        A_temp = copy.deepcopy(A)
+        for i in range(N):
+            b_prime[i] = []
+            for c in p[i]:
+                c_i = C.index(c)
+                if not set(B[i]) & set(A[c_i]):
+                    b = get_b_star(B[i], b_prime[i], get_P_A(A[c_i], q_c[c_i]))
+                    if b:
+                        if b not in b_prime[i]:
+                            b_prime[i].append(b)
+                        temp = get_min_B(B[i], get_P_A(A[c_i], q_c[c_i]))
+                        print(temp)
+                        A[c_i].append(temp)
+                        if len(A[c_i]) > q_c[c_i]:
+                            m = min(A[c_i])
+                            A[c_i].remove(m)
+                else:
+                    b_s = list(set(B[i]) & set(A[c_i]))[0]
+                    b_s_s = get_b_star_star(B[i], b_prime[i], b_s)
+                    if b_s_s:
+                        b_prime[i].append(b_s_s)
+                        A[c_i].remove(b_s)
+                        A[c_i].append(b_s_s)
+                    else:
+                        b_prime[i].remove(b_s)
+                        A[c_i].remove(b_s)
+                # mx = max(B[i])
+                # if mx
+                # print(f"i:{i+1} A_c1:{A[0]} A_c2:{A[1]} A_c3:{A[2]} A_c4:{A[3]} b_prime_{i+1}:{b_prime[i]} B:{B[i]}")
+                print(f"i:{i+1} A_c1:{A[0]} A_c2:{A[1]} A_c3:{A[2]}")# A_c4:{A[3]} b_prime_{i+1}:{b_prime[i]} B:{B[i]}")
+            print("--------------------------------")
+        if A_temp == A:
+            active = False
+    return A
+                   
+def remove_from_others(c_i, A, n):
+    for item in A:
+        if item != A[c_i]:
+            if n in item:
+                item.remove(n)
+
+def get_P_A(A, q_c):
+    if len(A) < q_c: return 0
+    if len(A) == q_c: return min(A)
+
+def get_b_star_star(B, b_prime, b_star):
+    b = set(B) - set(b_prime)
+    for item in sorted(b):
+        if item >= b_star:
+            return item
+    return False
+            
+            
+def get_min_B(B, p_A):
+    for item in sorted(B):
+        if item > p_A:
+            return item
+    return False
+
+def get_b_star(B, b_prime, p_A):
+    b = set(B) - set(b_prime)
+    if not b:
+        return False
+    for item in sorted(b):
+        if item > p_A:
+            return item
+    return False
+    
+def show_result(rs, B, N, C):
+    results = {i: [] for i in range(N) }
+    for i in range(N):
+        for c in C:
+            index = C.index(c)
+            if set(B[i]) & set(rs[index]):
+                results[i].append(c)
+    print(results)
+    print("Results:")
+    for key, value in results.items():
+        txt = "{"
+        last = len(value) - 1
+        for item in value:
+            txt += item
+            if last != value.index(item):
+                txt += ", "
+        txt += "}"
+        print(f"{key + 1}: {txt}")
+
+def main():
+    C = get_course_names()
+    q_c = get_caps(C)
+    N = get_students()
+    preferences = get_preferences(N, C)
+    B = set_B_list(N)
+    B_temp = copy.deepcopy(B)
+    
+    rs = main_algorithm(C, q_c, N, preferences, B)
+    show_result(rs, B_temp, N, C)
+
+if __name__ == "__main__":
+    main()
+    
